@@ -11,11 +11,15 @@ import binascii
 import subprocess
 import time
 
-# 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-server_address = os.getenv("SERVER_ADDRESS", "127.0.0.1")
+# ✅ sanitize: "http://127.0.0.1:8188/" gibi gelse bile host'u temizle
+server_address = os.getenv("SERVER_ADDRESS", "127.0.0.1").strip()
+server_address = server_address.replace("http://", "").replace("https://", "")
+server_address = server_address.split("/")[0]
+server_address = server_address.split(":")[0]  # port gelirse at
+
 client_id = str(uuid.uuid4())
 
 
@@ -24,7 +28,7 @@ def to_nearest_multiple_of_16(value):
     try:
         numeric_value = float(value)
     except Exception:
-        raise Exception("width/height 값이 숫자가 아닙니다: {value}")
+        raise Exception("width/height 값이 숫자가 아닙니다: {}".format(value))
     adjusted = int(round(numeric_value / 16.0) * 16)
     if adjusted < 16:
         adjusted = 16
@@ -34,10 +38,10 @@ def to_nearest_multiple_of_16(value):
 def process_input(input_data, temp_dir, output_filename, input_type):
     """입력 데이터를 처리하여 파일 경로를 반환하는 함수"""
     if input_type == "path":
-        logger.info("📁 경로 입력 처리: {input_data}")
+        logger.info("📁 경로 입력 처리: {}".format(input_data))
         return input_data
     elif input_type == "url":
-        logger.info("🌐 URL 입력 처리: {input_data}")
+        logger.info("🌐 URL 입력 처리: {}".format(input_data))
         os.makedirs(temp_dir, exist_ok=True)
         file_path = os.path.abspath(os.path.join(temp_dir, output_filename))
         return download_file_from_url(input_data, file_path)
@@ -45,7 +49,7 @@ def process_input(input_data, temp_dir, output_filename, input_type):
         logger.info("🔢 Base64 입력 처리")
         return save_base64_to_file(input_data, temp_dir, output_filename)
     else:
-        raise Exception("지원하지 않는 입력 타입: {input_type}")
+        raise Exception("지원하지 않는 입력 타입: {}".format(input_type))
 
 
 def download_file_from_url(url, output_path):
@@ -71,17 +75,17 @@ def download_file_from_url(url, output_path):
         )
 
         if result.returncode == 0:
-            logger.info("✅ URL에서 파일을 성공적으로 다운로드했습니다: {url} -> {output_path}")
+            logger.info("✅ URL 다운로드 성공: {} -> {}".format(url, output_path))
             return output_path
         else:
-            logger.error("❌ curl 다운로드 실패: {result.stderr}")
-            raise Exception("URL 다운로드 실패: {result.stderr}")
+            logger.error("❌ curl 다운로드 실패: {}".format(result.stderr))
+            raise Exception("URL 다운로드 실패: {}".format(result.stderr))
     except subprocess.TimeoutExpired:
         logger.error("❌ 다운로드 시간 초과")
         raise Exception("다운로드 시간 초과")
     except Exception as e:
-        logger.error("❌ 다운로드 중 오류 발생: {e}")
-        raise Exception("다운로드 중 오류 발생: {e}")
+        logger.error("❌ 다운로드 중 오류 발생: {}".format(e))
+        raise Exception("다운로드 중 오류 발생: {}".format(e))
 
 
 def save_base64_to_file(base64_data, temp_dir, output_filename):
@@ -94,16 +98,16 @@ def save_base64_to_file(base64_data, temp_dir, output_filename):
         with open(file_path, "wb") as f:
             f.write(decoded_data)
 
-        logger.info("✅ Base64 입력을 '{file_path}' 파일로 저장했습니다.")
+        logger.info("✅ Base64 입력을 '{}' 파일로 저장했습니다.".format(file_path))
         return file_path
     except (binascii.Error, ValueError) as e:
-        logger.error("❌ Base64 디코딩 실패: {e}")
-        raise Exception("Base64 디코딩 실패: {e}")
+        logger.error("❌ Base64 디코딩 실패: {}".format(e))
+        raise Exception("Base64 디코딩 실패: {}".format(e))
 
 
 def queue_prompt(prompt):
-    url = "http://{server_address}:8188/prompt"
-    logger.info("Queueing prompt to: {url}")
+    url = "http://{}:8188/prompt".format(server_address)
+    logger.info("Queueing prompt to: {}".format(url))
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode("utf-8")
     req = urllib.request.Request(url, data=data)
@@ -111,8 +115,8 @@ def queue_prompt(prompt):
 
 
 def get_history(prompt_id):
-    url = "http://{server_address}:8188/history/{prompt_id}"
-    logger.info("Getting history from: {url}")
+    url = "http://{}:8188/history/{}".format(server_address, prompt_id)
+    logger.info("Getting history from: {}".format(url))
     with urllib.request.urlopen(url) as response:
         return json.loads(response.read())
 
@@ -153,9 +157,9 @@ def load_workflow(workflow_path):
 
 def handler(job):
     job_input = job.get("input", {})
-    logger.info("Received job input: {job_input}")
+    logger.info("Received job input: {}".format(job_input))
 
-    task_id = "task_{uuid.uuid4()}"
+    task_id = "task_{}".format(uuid.uuid4())
 
     # --- Input image ---
     if "image_path" in job_input:
@@ -181,12 +185,12 @@ def handler(job):
     lora_pairs = job_input.get("lora_pairs", [])
     lora_count = min(len(lora_pairs), 4)
     if len(lora_pairs) > 4:
-        logger.warning("LoRA 개수가 {len(lora_pairs)}개입니다. 최대 4개까지만 지원됩니다. 처음 4개만 사용합니다.")
+        logger.warning("LoRA 개수가 {}개입니다. 최대 4개까지만 지원됩니다. 처음 4개만 사용합니다.".format(len(lora_pairs)))
         lora_pairs = lora_pairs[:4]
 
     # --- Select workflow ---
     workflow_file = "/new_Wan22_flf2v_api.json" if end_image_path_local else "/new_Wan22_api.json"
-    logger.info("Using {'FLF2V' if end_image_path_local else 'single'} workflow with {lora_count} LoRA pairs")
+    logger.info("Using {} workflow with {} LoRA pairs".format("FLF2V" if end_image_path_local else "single", lora_count))
 
     prompt = load_workflow(workflow_file)
 
@@ -197,11 +201,10 @@ def handler(job):
     fps = int(job_input.get("fps", 16))
     seed = int(job_input.get("seed", 42))
 
-    # width/height required
     original_width = job_input.get("width", 480)
     original_height = job_input.get("height", 832)
 
-    # --- Disable CPU offload on 5090 (stability/quality) ---
+    # --- Disable CPU offload ---
     for nid in ("135", "220", "540", "541"):
         if nid in prompt and "inputs" in prompt[nid]:
             prompt[nid]["inputs"]["force_offload"] = False
@@ -209,37 +212,30 @@ def handler(job):
     # --- Apply main inputs ---
     prompt["244"]["inputs"]["image"] = image_path
     prompt["541"]["inputs"]["num_frames"] = length
-
     prompt["135"]["inputs"]["positive_prompt"] = job_input.get("prompt", "")
     prompt["135"]["inputs"]["negative_prompt"] = job_input.get(
         "negative_prompt",
         "bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards",
     )
-
     prompt["220"]["inputs"]["seed"] = seed
     prompt["540"]["inputs"]["seed"] = seed
 
-    # --- Resolution rounding ---
     adjusted_width = to_nearest_multiple_of_16(original_width)
     adjusted_height = to_nearest_multiple_of_16(original_height)
     if adjusted_width != original_width:
-        logger.info("Width adjusted to nearest multiple of 16: {original_width} -> {adjusted_width}")
+        logger.info("Width adjusted: {} -> {}".format(original_width, adjusted_width))
     if adjusted_height != original_height:
-        logger.info("Height adjusted to nearest multiple of 16: {original_height} -> {adjusted_height}")
+        logger.info("Height adjusted: {} -> {}".format(original_height, adjusted_height))
     prompt["235"]["inputs"]["value"] = adjusted_width
     prompt["236"]["inputs"]["value"] = adjusted_height
 
-    # --- Context schedule ---
     if "498" in prompt:
         prompt["498"]["inputs"]["context_overlap"] = int(job_input.get("context_overlap", 48))
         prompt["498"]["inputs"]["context_frames"] = length
 
-    # ✅ Apply steps/cfg/fps to correct workflow nodes
-    # Total steps (node 569)
     if "569" in prompt:
         prompt["569"]["inputs"]["value"] = steps
 
-    # Split step (node 575)
     if "575" in prompt:
         lowsteps = int(round(steps * 0.6))
         lowsteps = max(1, min(lowsteps, steps - 1))
@@ -247,26 +243,21 @@ def handler(job):
     else:
         lowsteps = None
 
-    # CFG schedule (node 570)
     if "570" in prompt:
         prompt["570"]["inputs"]["cfg_scale_start"] = cfg
         prompt["570"]["inputs"]["cfg_scale_end"] = cfg
 
-    # Sampler cfg (node 540 expects "cfg")
     if "540" in prompt:
         prompt["540"]["inputs"]["cfg"] = cfg
 
-    # FPS (VHS_VideoCombine node 131)
     if "131" in prompt:
         prompt["131"]["inputs"]["frame_rate"] = fps
 
-    logger.info("✅ Applied: length={length}, steps={steps}, split={lowsteps}, cfg={cfg}, fps={fps}, seed={seed}")
+    logger.info("✅ Applied: length={}, steps={}, split={}, cfg={}, fps={}, seed={}".format(length, steps, lowsteps, cfg, fps, seed))
 
-    # --- End image for FLF2V ---
     if end_image_path_local:
         prompt["617"]["inputs"]["image"] = end_image_path_local
 
-    # --- Apply LoRA pairs ---
     if lora_count > 0:
         high_lora_node_id = "279"
         low_lora_node_id = "553"
@@ -278,29 +269,29 @@ def handler(job):
             lora_low_weight = float(lora_pair.get("low_weight", 1.0))
 
             if lora_high:
-                prompt[high_lora_node_id]["inputs"]["lora_{i+1}"] = lora_high
-                prompt[high_lora_node_id]["inputs"]["strength_{i+1}"] = lora_high_weight
-                logger.info("LoRA {i+1} HIGH applied: {lora_high} w={lora_high_weight}")
+                prompt[high_lora_node_id]["inputs"]["lora_{}".format(i + 1)] = lora_high
+                prompt[high_lora_node_id]["inputs"]["strength_{}".format(i + 1)] = lora_high_weight
+                logger.info("LoRA {} HIGH applied: {} w={}".format(i + 1, lora_high, lora_high_weight))
 
             if lora_low:
-                prompt[low_lora_node_id]["inputs"]["lora_{i+1}"] = lora_low
-                prompt[low_lora_node_id]["inputs"]["strength_{i+1}"] = lora_low_weight
-                logger.info("LoRA {i+1} LOW applied: {lora_low} w={lora_low_weight}")
+                prompt[low_lora_node_id]["inputs"]["lora_{}".format(i + 1)] = lora_low
+                prompt[low_lora_node_id]["inputs"]["strength_{}".format(i + 1)] = lora_low_weight
+                logger.info("LoRA {} LOW applied: {} w={}".format(i + 1, lora_low, lora_low_weight))
 
-    # --- Connect to ComfyUI ---
-    ws_url = "ws://{server_address}:8188/ws?clientId={client_id}"
-    logger.info("Connecting to WebSocket: {ws_url}")
+    ws_url = "ws://{}:8188/ws?clientId={}".format(server_address, client_id)
+    logger.info("Connecting to WebSocket: {}".format(ws_url))
 
-    # HTTP readiness check (max 3 min)
-    http_url = "http://{server_address}:8188/"
+    http_url = "http://{}:8188/".format(server_address)
+    logger.info("DEBUG http_url={} server_address={!r}".format(http_url, server_address))
+
     max_http_attempts = 180
     for http_attempt in range(max_http_attempts):
         try:
             urllib.request.urlopen(http_url, timeout=5)
-            logger.info("HTTP 연결 성공 (시도 {http_attempt+1})")
+            logger.info("HTTP 연결 성공 (시도 {})".format(http_attempt + 1))
             break
         except Exception as e:
-            logger.warning("HTTP 연결 실패 (시도 {http_attempt+1}/{max_http_attempts}): {e}")
+            logger.warning("HTTP 연결 실패 (시도 {}/{}): {}".format(http_attempt + 1, max_http_attempts, e))
             if http_attempt == max_http_attempts - 1:
                 raise Exception("ComfyUI 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.")
             time.sleep(1)
@@ -310,10 +301,10 @@ def handler(job):
     for attempt in range(max_attempts):
         try:
             ws.connect(ws_url)
-            logger.info("웹소켓 연결 성공 (시도 {attempt+1})")
+            logger.info("웹소켓 연결 성공 (시도 {})".format(attempt + 1))
             break
         except Exception as e:
-            logger.warning("웹소켓 연결 실패 (시도 {attempt+1}/{max_attempts}): {e}")
+            logger.warning("웹소켓 연결 실패 (시도 {}/{}): {}".format(attempt + 1, max_attempts, e))
             if attempt == max_attempts - 1:
                 raise Exception("웹소켓 연결 시간 초과 (3분)")
             time.sleep(5)
