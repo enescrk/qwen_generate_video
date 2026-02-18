@@ -186,6 +186,12 @@ def handler(job):
     logger.info(f"Using {'FLF2V' if end_image_path_local else 'single'} workflow with {lora_count} LoRA pairs")
     
     prompt = load_workflow(workflow_file)
+
+    # ✅ 5090'da kalite/stabilite için CPU offload kapat
+    prompt["135"]["inputs"]["force_offload"] = False
+    prompt["220"]["inputs"]["force_offload"] = False
+    prompt["540"]["inputs"]["force_offload"] = False
+    prompt["541"]["inputs"]["force_offload"] = False
     
     length = job_input.get("length", 81)
     steps = job_input.get("steps", 10)
@@ -211,13 +217,33 @@ def handler(job):
     prompt["498"]["inputs"]["context_overlap"] = job_input.get("context_overlap", 48)
     prompt["498"]["inputs"]["context_frames"] = length
 
-    # step 설정 적용
-    if "834" in prompt:
-        prompt["834"]["inputs"]["steps"] = steps
-        logger.info(f"Steps set to: {steps}")
-        lowsteps = int(steps*0.6)
-        prompt["829"]["inputs"]["step"] = lowsteps
-        logger.info(f"LowSteps set to: {lowsteps}")
+# ✅ steps / cfg / fps gerçekten workflow'a uygulansın (WAN workflow node'ları)
+steps = int(job_input.get("steps", 8))
+cfg = float(job_input.get("cfg", 2.0))
+fps = int(job_input.get("fps", 16))
+
+# Toplam steps (node 569)
+prompt["569"]["inputs"]["value"] = steps
+
+# Split step (node 575) - iki aşamalı sampler
+lowsteps = int(round(steps * 0.6))
+if lowsteps < 1:
+    lowsteps = 1
+if lowsteps >= steps:
+    lowsteps = steps - 1
+prompt["575"]["inputs"]["value"] = lowsteps
+
+# CFG schedule (node 570)
+prompt["570"]["inputs"]["cfg_scale_start"] = cfg
+prompt["570"]["inputs"]["cfg_scale_end"] = cfg
+
+# Sampler cfg (node 540)
+prompt["540"]["inputs"]["cfg"] = cfg
+
+# Video FPS (node 131)
+prompt["131"]["inputs"]["frame_rate"] = fps
+
+logger.info(f"✅ Steps applied: steps={steps}, split(lowsteps)={lowsteps}, cfg={cfg}, fps={fps}")
 
     # 엔드 이미지가 있는 경우 617번 노드에 경로 적용 (FLF2V 전용)
     if end_image_path_local:
