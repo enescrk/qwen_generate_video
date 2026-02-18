@@ -53,7 +53,9 @@ def download_file_from_url(url, output_path):
     try:
         # wget을 사용하여 파일 다운로드
         result = subprocess.run([
-            'wget', '-O', output_path, '--no-verbose', url
+            'curl', '-L', '--fail', '--silent', '--show-error',
+            '--retry', '3', '--retry-delay', '1',
+            '-o', output_path, url
         ], capture_output=True, text=True)
         
         if result.returncode == 0:
