@@ -24,7 +24,7 @@ def to_nearest_multiple_of_16(value):
     try:
         numeric_value = float(value)
     except Exception:
-        raise Exception(f"width/height 값이 숫자가 아닙니다: {value}")
+        raise Exception("width/height 값이 숫자가 아닙니다: {value}")
     adjusted = int(round(numeric_value / 16.0) * 16)
     if adjusted < 16:
         adjusted = 16
@@ -34,10 +34,10 @@ def to_nearest_multiple_of_16(value):
 def process_input(input_data, temp_dir, output_filename, input_type):
     """입력 데이터를 처리하여 파일 경로를 반환하는 함수"""
     if input_type == "path":
-        logger.info(f"📁 경로 입력 처리: {input_data}")
+        logger.info("📁 경로 입력 처리: {input_data}")
         return input_data
     elif input_type == "url":
-        logger.info(f"🌐 URL 입력 처리: {input_data}")
+        logger.info("🌐 URL 입력 처리: {input_data}")
         os.makedirs(temp_dir, exist_ok=True)
         file_path = os.path.abspath(os.path.join(temp_dir, output_filename))
         return download_file_from_url(input_data, file_path)
@@ -45,7 +45,7 @@ def process_input(input_data, temp_dir, output_filename, input_type):
         logger.info("🔢 Base64 입력 처리")
         return save_base64_to_file(input_data, temp_dir, output_filename)
     else:
-        raise Exception(f"지원하지 않는 입력 타입: {input_type}")
+        raise Exception("지원하지 않는 입력 타입: {input_type}")
 
 
 def download_file_from_url(url, output_path):
@@ -71,17 +71,17 @@ def download_file_from_url(url, output_path):
         )
 
         if result.returncode == 0:
-            logger.info(f"✅ URL에서 파일을 성공적으로 다운로드했습니다: {url} -> {output_path}")
+            logger.info("✅ URL에서 파일을 성공적으로 다운로드했습니다: {url} -> {output_path}")
             return output_path
         else:
-            logger.error(f"❌ curl 다운로드 실패: {result.stderr}")
-            raise Exception(f"URL 다운로드 실패: {result.stderr}")
+            logger.error("❌ curl 다운로드 실패: {result.stderr}")
+            raise Exception("URL 다운로드 실패: {result.stderr}")
     except subprocess.TimeoutExpired:
         logger.error("❌ 다운로드 시간 초과")
         raise Exception("다운로드 시간 초과")
     except Exception as e:
-        logger.error(f"❌ 다운로드 중 오류 발생: {e}")
-        raise Exception(f"다운로드 중 오류 발생: {e}")
+        logger.error("❌ 다운로드 중 오류 발생: {e}")
+        raise Exception("다운로드 중 오류 발생: {e}")
 
 
 def save_base64_to_file(base64_data, temp_dir, output_filename):
@@ -94,16 +94,16 @@ def save_base64_to_file(base64_data, temp_dir, output_filename):
         with open(file_path, "wb") as f:
             f.write(decoded_data)
 
-        logger.info(f"✅ Base64 입력을 '{file_path}' 파일로 저장했습니다.")
+        logger.info("✅ Base64 입력을 '{file_path}' 파일로 저장했습니다.")
         return file_path
     except (binascii.Error, ValueError) as e:
-        logger.error(f"❌ Base64 디코딩 실패: {e}")
-        raise Exception(f"Base64 디코딩 실패: {e}")
+        logger.error("❌ Base64 디코딩 실패: {e}")
+        raise Exception("Base64 디코딩 실패: {e}")
 
 
 def queue_prompt(prompt):
-    url = f"http://{server_address}:8188/prompt"
-    logger.info(f"Queueing prompt to: {url}")
+    url = "http://{server_address}:8188/prompt"
+    logger.info("Queueing prompt to: {url}")
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode("utf-8")
     req = urllib.request.Request(url, data=data)
@@ -111,8 +111,8 @@ def queue_prompt(prompt):
 
 
 def get_history(prompt_id):
-    url = f"http://{server_address}:8188/history/{prompt_id}"
-    logger.info(f"Getting history from: {url}")
+    url = "http://{server_address}:8188/history/{prompt_id}"
+    logger.info("Getting history from: {url}")
     with urllib.request.urlopen(url) as response:
         return json.loads(response.read())
 
@@ -153,9 +153,9 @@ def load_workflow(workflow_path):
 
 def handler(job):
     job_input = job.get("input", {})
-    logger.info(f"Received job input: {job_input}")
+    logger.info("Received job input: {job_input}")
 
-    task_id = f"task_{uuid.uuid4()}"
+    task_id = "task_{uuid.uuid4()}"
 
     # --- Input image ---
     if "image_path" in job_input:
@@ -181,12 +181,12 @@ def handler(job):
     lora_pairs = job_input.get("lora_pairs", [])
     lora_count = min(len(lora_pairs), 4)
     if len(lora_pairs) > 4:
-        logger.warning(f"LoRA 개수가 {len(lora_pairs)}개입니다. 최대 4개까지만 지원됩니다. 처음 4개만 사용합니다.")
+        logger.warning("LoRA 개수가 {len(lora_pairs)}개입니다. 최대 4개까지만 지원됩니다. 처음 4개만 사용합니다.")
         lora_pairs = lora_pairs[:4]
 
     # --- Select workflow ---
     workflow_file = "/new_Wan22_flf2v_api.json" if end_image_path_local else "/new_Wan22_api.json"
-    logger.info(f"Using {'FLF2V' if end_image_path_local else 'single'} workflow with {lora_count} LoRA pairs")
+    logger.info("Using {'FLF2V' if end_image_path_local else 'single'} workflow with {lora_count} LoRA pairs")
 
     prompt = load_workflow(workflow_file)
 
@@ -223,9 +223,9 @@ def handler(job):
     adjusted_width = to_nearest_multiple_of_16(original_width)
     adjusted_height = to_nearest_multiple_of_16(original_height)
     if adjusted_width != original_width:
-        logger.info(f"Width adjusted to nearest multiple of 16: {original_width} -> {adjusted_width}")
+        logger.info("Width adjusted to nearest multiple of 16: {original_width} -> {adjusted_width}")
     if adjusted_height != original_height:
-        logger.info(f"Height adjusted to nearest multiple of 16: {original_height} -> {adjusted_height}")
+        logger.info("Height adjusted to nearest multiple of 16: {original_height} -> {adjusted_height}")
     prompt["235"]["inputs"]["value"] = adjusted_width
     prompt["236"]["inputs"]["value"] = adjusted_height
 
@@ -260,7 +260,7 @@ def handler(job):
     if "131" in prompt:
         prompt["131"]["inputs"]["frame_rate"] = fps
 
-    logger.info(f"✅ Applied: length={length}, steps={steps}, split={lowsteps}, cfg={cfg}, fps={fps}, seed={seed}")
+    logger.info("✅ Applied: length={length}, steps={steps}, split={lowsteps}, cfg={cfg}, fps={fps}, seed={seed}")
 
     # --- End image for FLF2V ---
     if end_image_path_local:
@@ -278,29 +278,29 @@ def handler(job):
             lora_low_weight = float(lora_pair.get("low_weight", 1.0))
 
             if lora_high:
-                prompt[high_lora_node_id]["inputs"][f"lora_{i+1}"] = lora_high
-                prompt[high_lora_node_id]["inputs"][f"strength_{i+1}"] = lora_high_weight
-                logger.info(f"LoRA {i+1} HIGH applied: {lora_high} w={lora_high_weight}")
+                prompt[high_lora_node_id]["inputs"]["lora_{i+1}"] = lora_high
+                prompt[high_lora_node_id]["inputs"]["strength_{i+1}"] = lora_high_weight
+                logger.info("LoRA {i+1} HIGH applied: {lora_high} w={lora_high_weight}")
 
             if lora_low:
-                prompt[low_lora_node_id]["inputs"][f"lora_{i+1}"] = lora_low
-                prompt[low_lora_node_id]["inputs"][f"strength_{i+1}"] = lora_low_weight
-                logger.info(f"LoRA {i+1} LOW applied: {lora_low} w={lora_low_weight}")
+                prompt[low_lora_node_id]["inputs"]["lora_{i+1}"] = lora_low
+                prompt[low_lora_node_id]["inputs"]["strength_{i+1}"] = lora_low_weight
+                logger.info("LoRA {i+1} LOW applied: {lora_low} w={lora_low_weight}")
 
     # --- Connect to ComfyUI ---
-    ws_url = f"ws://{server_address}:8188/ws?clientId={client_id}"
-    logger.info(f"Connecting to WebSocket: {ws_url}")
+    ws_url = "ws://{server_address}:8188/ws?clientId={client_id}"
+    logger.info("Connecting to WebSocket: {ws_url}")
 
     # HTTP readiness check (max 3 min)
-    http_url = f"http://{server_address}:8188/"
+    http_url = "http://{server_address}:8188/"
     max_http_attempts = 180
     for http_attempt in range(max_http_attempts):
         try:
             urllib.request.urlopen(http_url, timeout=5)
-            logger.info(f"HTTP 연결 성공 (시도 {http_attempt+1})")
+            logger.info("HTTP 연결 성공 (시도 {http_attempt+1})")
             break
         except Exception as e:
-            logger.warning(f"HTTP 연결 실패 (시도 {http_attempt+1}/{max_http_attempts}): {e}")
+            logger.warning("HTTP 연결 실패 (시도 {http_attempt+1}/{max_http_attempts}): {e}")
             if http_attempt == max_http_attempts - 1:
                 raise Exception("ComfyUI 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.")
             time.sleep(1)
@@ -310,10 +310,10 @@ def handler(job):
     for attempt in range(max_attempts):
         try:
             ws.connect(ws_url)
-            logger.info(f"웹소켓 연결 성공 (시도 {attempt+1})")
+            logger.info("웹소켓 연결 성공 (시도 {attempt+1})")
             break
         except Exception as e:
-            logger.warning(f"웹소켓 연결 실패 (시도 {attempt+1}/{max_attempts}): {e}")
+            logger.warning("웹소켓 연결 실패 (시도 {attempt+1}/{max_attempts}): {e}")
             if attempt == max_attempts - 1:
                 raise Exception("웹소켓 연결 시간 초과 (3분)")
             time.sleep(5)
