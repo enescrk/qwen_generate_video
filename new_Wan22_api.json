@@ -52,9 +52,9 @@
       "filename_prefix": "WanVideo_X264",
       "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
-      "crf": 23,
-      "save_metadata": false,
-      "trim_to_audio": false,
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": true,
       "pingpong": false,
       "save_output": true,
       "images": [
@@ -71,7 +71,7 @@
     "inputs": {
       "positive_prompt": "running man, grab the gun",
       "negative_prompt": "bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards",
-      "force_offload": false,
+      "force_offload": true,
       "use_disk_cache": false,
       "device": "gpu",
       "t5": [
@@ -138,7 +138,7 @@
       "strength_2": 1,
       "crop": "center",
       "combine_embeds": "average",
-      "force_offload": false,
+      "force_offload": true,
       "tiles": 0,
       "ratio": 0.5000000000000001,
       "clip_vision": [
@@ -167,7 +167,7 @@
       ],
       "shift": 9.000000000000002,
       "seed": 903379117355889,
-      "force_offload": false,
+      "force_offload": true,
       "scheduler": "dpm++_sde",
       "riflex_freq_index": 0,
       "denoise_strength": 1,
@@ -253,7 +253,7 @@
       "context_schedule": "static_standard",
       "context_frames": 81,
       "context_stride": 4,
-      "context_overlap": 24,
+      "context_overlap": 48,
       "freenoise": true,
       "verbose": false,
       "fuse_method": "linear"
@@ -291,7 +291,7 @@
       "cfg": 1.0000000000000002,
       "shift": 9.000000000000002,
       "seed": 391376475114947,
-      "force_offload": false,
+      "force_offload": true,
       "scheduler": "dpm++_sde",
       "riflex_freq_index": 0,
       "denoise_strength": 1,
@@ -343,7 +343,7 @@
       "noise_aug_strength": 0,
       "start_latent_strength": 1,
       "end_latent_strength": 1,
-      "force_offload": false,
+      "force_offload": true,
       "fun_or_fl2v_model": false,
       "tiled_vae": false,
       "vae": [
